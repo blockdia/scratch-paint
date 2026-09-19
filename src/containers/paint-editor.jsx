@@ -332,6 +332,8 @@ class PaintEditor extends React.Component {
                 canUndo={this.props.shouldShowUndo}
                 canvas={this.state.canvas}
                 colorInfo={this.state.colorInfo}
+                controlPointEditor={this.props.controlPointEditor}
+                controlPointGuide={this.props.controlPointGuide}
                 format={this.props.format}
                 image={this.props.image}
                 imageFormat={this.props.imageFormat}
@@ -367,6 +369,8 @@ PaintEditor.propTypes = {
     changeColorToEyeDropper: PropTypes.func,
     changeMode: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
+    controlPointEditor: PropTypes.object, // eslint-disable-line react/forbid-prop-types
+    controlPointGuide: PropTypes.object, // eslint-disable-line react/forbid-prop-types
     customFonts: PropTypes.arrayOf(PropTypes.shape({
         name: PropTypes.string.isRequired,
         family: PropTypes.string.isRequired

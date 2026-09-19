@@ -58,6 +58,21 @@ const KeyboardShortcutsHOC = function (WrappedComponent) {
             if (this.props.textEditing) return;
 
             const lowercaseKey = event.key.toLowerCase();
+            // Disabled paint buttons must also disable their keyboard actions.
+            // Undo/redo belongs to component geometry while its editor is active.
+            const editor = this.props.controlPointEditor;
+            if (editor && editor.active) {
+                if (event.metaKey || event.ctrlKey) {
+                    if ((event.shiftKey && lowercaseKey === 'z') || lowercaseKey === 'y') {
+                        event.preventDefault();
+                        editor.onRedo();
+                    } else if (lowercaseKey === 'z') {
+                        event.preventDefault();
+                        editor.onUndo();
+                    }
+                }
+                return;
+            }
             if (event.key === 'Escape') {
                 event.preventDefault();
                 clearSelection(this.props.clearSelectedItems);
@@ -157,6 +172,11 @@ const KeyboardShortcutsHOC = function (WrappedComponent) {
     KeyboardShortcutsWrapper.propTypes = {
         changeMode: PropTypes.func.isRequired,
         clearSelectedItems: PropTypes.func.isRequired,
+        controlPointEditor: PropTypes.shape({
+            active: PropTypes.bool.isRequired,
+            onRedo: PropTypes.func.isRequired,
+            onUndo: PropTypes.func.isRequired
+        }),
         format: PropTypes.oneOf(Object.keys(Formats)),
         mode: PropTypes.oneOf(Object.keys(Modes)).isRequired,
         onCopyToClipboard: PropTypes.func.isRequired,

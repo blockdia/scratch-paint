@@ -10,6 +10,7 @@ import {performSnapshot} from '../helper/undo';
 import {undoSnapshot, clearUndoState} from '../reducers/undo';
 import {isGroup, ungroupItems} from '../helper/group';
 import {clearRaster, convertBackgroundGuideLayer, getRaster, setupLayers, updateTheme} from '../helper/layer';
+import {drawControlPointGuide, projectPointToEditor} from '../helper/control-point-guide';
 import {clearSelectedItems} from '../reducers/selected-items';
 import {
     ART_BOARD_WIDTH, ART_BOARD_HEIGHT, CENTER, MAX_WORKSPACE_BOUNDS,
@@ -36,7 +37,10 @@ class PaperCanvas extends React.Component {
             'maybeZoomToFit',
             'switchCostume',
             'onViewResize',
-            'recalibrateSize'
+            'recalibrateSize',
+            'updateControlPointGuide',
+            'activateControlPointTool',
+            'deactivateControlPointTool'
         ]);
     }
     componentDidMount () {
@@ -65,6 +69,8 @@ class PaperCanvas extends React.Component {
         // Make layers.
         setupLayers(this.props.format);
         updateTheme(this.props.theme);
+        this.setupControlPointTool();
+        this.updateControlPointGuide(this.props.controlPointGuide, this.props.theme);
         this.importImage(
             this.props.imageFormat, this.props.image, this.props.rotationCenterX, this.props.rotationCenterY);
     }
@@ -81,6 +87,17 @@ class PaperCanvas extends React.Component {
         if (this.props.theme !== newProps.theme) {
             updateTheme(newProps.theme);
         }
+        if (this.props.controlPointGuide !== newProps.controlPointGuide ||
+            this.props.viewBounds !== newProps.viewBounds ||
+            this.props.theme !== newProps.theme) {
+            this.updateControlPointGuide(newProps.controlPointGuide, newProps.theme);
+        }
+    }
+    componentDidUpdate () {
+        if (this.props.controlPointGuide) {
+            this.activateControlPointTool();
+            if (this.controlPointDrag) this.canvas.style.cursor = 'grabbing';
+        }
     }
     componentWillUnmount () {
         this.clearQueuedImport();
@@ -88,7 +105,110 @@ class PaperCanvas extends React.Component {
         if (!this.shouldZoomToFit) {
             this.props.saveZoomLevel();
         }
+        this.deactivateControlPointTool();
+        if (this.controlPointTool) this.controlPointTool.remove();
         paper.remove();
+    }
+    setupControlPointTool () {
+        this.controlPointTool = new paper.Tool();
+        this.controlPointTool.onMouseDown = event => {
+            const guide = this.currentControlPointGuide;
+            if (!guide) return;
+            const name = Object.keys(this.controlPointEndpoints).find(endpoint =>
+                this.controlPointEndpoints[endpoint].position.getDistance(event.point) <=
+                    (13 / paper.view.zoom)
+            );
+            if (!name) return;
+            this.controlPointDrag = {
+                name: name,
+                point: guide.points[name].position.slice()
+            };
+            this.canvas.focus();
+            this.canvas.style.cursor = 'grabbing';
+            if (guide.onSelect) guide.onSelect(name);
+            if (guide.onStart) guide.onStart(name);
+            event.stop();
+        };
+        this.controlPointTool.onMouseDrag = event => {
+            if (!this.controlPointDrag || !this.currentControlPointGuide) return;
+            const point = projectPointToEditor(event.point, this.currentControlPointGuide.snap);
+            this.controlPointDrag.point = point;
+            this.moveControlPointGuide(this.controlPointDrag.name, point);
+            if (this.currentControlPointGuide.onChange) {
+                this.currentControlPointGuide.onChange(this.controlPointDrag.name, point);
+            }
+            event.stop();
+        };
+        this.controlPointTool.onMouseUp = event => {
+            if (!this.controlPointDrag || !this.currentControlPointGuide) return;
+            const {name, point} = this.controlPointDrag;
+            this.controlPointDrag = null;
+            this.canvas.style.cursor = this.props.cursor;
+            if (this.currentControlPointGuide.onCommit) this.currentControlPointGuide.onCommit(name, point);
+            event.stop();
+        };
+        this.controlPointTool.onMouseMove = event => {
+            if (!this.currentControlPointGuide || this.controlPointDrag) return;
+            const hovering = Object.keys(this.controlPointEndpoints).some(endpoint =>
+                this.controlPointEndpoints[endpoint].position.getDistance(event.point) <=
+                    (13 / paper.view.zoom)
+            );
+            this.canvas.style.cursor = hovering ? 'grab' : this.props.cursor;
+        };
+        this.controlPointTool.onKeyDown = event => {
+            const guide = this.currentControlPointGuide;
+            if (!guide) return;
+            if (event.key === 'escape') {
+                this.controlPointDrag = null;
+                if (guide.onCancel) guide.onCancel();
+                event.stop();
+                return;
+            }
+            const offsets = {
+                left: [-1, 0],
+                right: [1, 0],
+                up: [0, 1],
+                down: [0, -1]
+            };
+            if (!offsets[event.key] || !guide.points[guide.selected]) return;
+            const multiplier = event.modifiers.shift ? 10 : 1;
+            const point = guide.points[guide.selected].position.map((value, index) =>
+                value + (offsets[event.key][index] * multiplier));
+            if (guide.onStart) guide.onStart(guide.selected);
+            this.moveControlPointGuide(guide.selected, point);
+            if (guide.onChange) guide.onChange(guide.selected, point);
+            if (guide.onCommit) guide.onCommit(guide.selected, point);
+            event.stop();
+        };
+    }
+    moveControlPointGuide (name, point) {
+        const guide = this.currentControlPointGuide;
+        const points = Object.assign({}, guide.points, {
+            [name]: Object.assign({}, guide.points[name], {position: point})
+        });
+        this.currentControlPointGuide = Object.assign({}, guide, {points: points, selected: name});
+        this.controlPointEndpoints = drawControlPointGuide(this.currentControlPointGuide, this.controlPointTheme);
+    }
+    updateControlPointGuide (guide, theme) {
+        this.currentControlPointGuide = guide;
+        this.controlPointTheme = theme;
+        this.controlPointEndpoints = drawControlPointGuide(guide, theme);
+        if (guide) {
+            this.activateControlPointTool();
+        } else {
+            this.deactivateControlPointTool();
+        }
+    }
+    activateControlPointTool () {
+        if (!this.controlPointTool || paper.tool === this.controlPointTool) return;
+        this.previousTool = paper.tool;
+        this.controlPointTool.activate();
+    }
+    deactivateControlPointTool () {
+        this.controlPointDrag = null;
+        if (this.canvas) this.canvas.style.cursor = this.props.cursor;
+        if (paper.tool === this.controlPointTool && this.previousTool) this.previousTool.activate();
+        this.previousTool = null;
     }
     clearQueuedImport () {
         if (this.queuedImport) {
@@ -125,7 +245,8 @@ class PaperCanvas extends React.Component {
                 clearRaster();
             } else if (!layer.data.isBackgroundGuideLayer &&
                 !layer.data.isDragCrosshairLayer &&
-                !layer.data.isOutlineLayer) {
+                !layer.data.isOutlineLayer &&
+                !layer.data.isControlPointGuideLayer) {
                 layer.removeChildren();
             }
         }
@@ -355,6 +476,7 @@ class PaperCanvas extends React.Component {
                 className={styles.paperCanvas}
                 ref={this.setCanvas}
                 style={{cursor: this.props.cursor}}
+                tabIndex="0"
                 resize="true"
             />
         );
@@ -368,6 +490,19 @@ PaperCanvas.propTypes = {
     clearPasteOffset: PropTypes.func.isRequired,
     clearSelectedItems: PropTypes.func.isRequired,
     clearUndo: PropTypes.func.isRequired,
+    controlPointGuide: PropTypes.shape({
+        onCancel: PropTypes.func,
+        onChange: PropTypes.func,
+        onCommit: PropTypes.func,
+        onSelect: PropTypes.func,
+        onStart: PropTypes.func,
+        points: PropTypes.objectOf(PropTypes.shape({
+            label: PropTypes.string.isRequired,
+            position: PropTypes.arrayOf(PropTypes.number).isRequired
+        })).isRequired,
+        selected: PropTypes.string,
+        snap: PropTypes.number
+    }),
     cursor: PropTypes.string,
     format: PropTypes.oneOf(Object.keys(Formats)),
     image: PropTypes.oneOfType([
@@ -383,6 +518,7 @@ PaperCanvas.propTypes = {
     theme: PropTypes.string,
     undoSnapshot: PropTypes.func.isRequired,
     updateViewBounds: PropTypes.func.isRequired,
+    viewBounds: PropTypes.instanceOf(paper.Matrix),
     zoomLevelId: PropTypes.string,
     zoomLevels: PropTypes.shape({
         currentZoomLevelId: PropTypes.string
@@ -392,6 +528,7 @@ const mapStateToProps = state => ({
     mode: state.scratchPaint.mode,
     cursor: state.scratchPaint.cursor,
     format: state.scratchPaint.format,
+    viewBounds: state.scratchPaint.viewBounds,
     zoomLevels: state.scratchPaint.zoomLevels
 });
 const mapDispatchToProps = dispatch => ({

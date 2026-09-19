@@ -28,7 +28,8 @@ const _restore = function (entry, setSelectedItems, onUpdateImage, isBitmapMode)
         const layer = paper.project.layers[i];
         if (!layer.data.isBackgroundGuideLayer &&
             !layer.data.isDragCrosshairLayer &&
-            !layer.data.isOutlineLayer) {
+            !layer.data.isOutlineLayer &&
+            !layer.data.isControlPointGuideLayer) {
             layer.removeChildren();
             layer.remove();
         }

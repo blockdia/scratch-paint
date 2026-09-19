@@ -17,8 +17,42 @@
 }
 
 .editor-container-top {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 40.32rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: calc(2 * $grid-unit);
+    flex: 0 0 auto;
     border-bottom: 1px dashed $ui-pane-border;
     padding-bottom: calc(2 * $grid-unit);
+}
+
+/* Both modes use the native rows as their sizing tracks, including addon and
+   responsive changes. Hidden native controls cannot receive focus or input. */
+.native-first-row,
+.control-point-header {
+    grid-area: 1 / 1;
+}
+
+.native-second-row,
+.control-point-second-row {
+    grid-area: 2 / 1;
+}
+
+.editor-container-top[data-control-point-editor="active"] > .native-first-row,
+.editor-container-top[data-control-point-editor="active"] > .native-second-row,
+.editor-container-top[data-control-point-editor="active"] > .native-first-row *,
+.editor-container-top[data-control-point-editor="active"] > .native-second-row * {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* A child may explicitly restore visibility (for example a focused input).
+   Hide the entire composited row while retaining its intrinsic grid size. */
+.editor-container-top[data-control-point-editor="active"] > .native-first-row,
+.editor-container-top[data-control-point-editor="active"] > .native-second-row {
+    opacity: 0;
 }
 
 .top-align-row {
@@ -31,6 +65,219 @@
 
 .row + .row {
     margin-top: calc(2 * $grid-unit);
+}
+
+.editor-container-top > .row {
+    margin-top: 0;
+}
+
+.control-point-entry {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+[dir="rtl"] .control-point-entry {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.control-point-action-button {
+    min-height: 2rem;
+    padding: 0 calc(2 * $grid-unit);
+    color: white;
+    background: $looks-secondary;
+    border: 1px solid $looks-secondary;
+    border-radius: .25rem;
+    font: inherit;
+    font-size: .75rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.control-point-action-button:hover {
+    filter: brightness(.96);
+}
+
+.control-point-action-button:focus-visible {
+    box-shadow: 0 0 0 $grid-unit $looks-transparent;
+    outline: none;
+}
+
+.control-point-header {
+    width: 100%;
+}
+
+.control-point-title {
+    color: $text-primary;
+    font-size: .75rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.control-point-history {
+    margin-left: calc(2 * $grid-unit);
+}
+
+[dir="rtl"] .control-point-history {
+    margin-right: calc(2 * $grid-unit);
+    margin-left: 0;
+}
+
+.control-point-snap {
+    display: flex;
+    align-items: center;
+    gap: $grid-unit;
+    margin-left: calc(2 * $grid-unit);
+    color: $text-primary;
+    font-size: .75rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+[dir="rtl"] .control-point-snap {
+    margin-right: calc(2 * $grid-unit);
+    margin-left: 0;
+}
+
+.control-point-snap input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+.control-point-snap-track {
+    position: relative;
+    width: 2rem;
+    height: 1.125rem;
+    border-radius: 1rem;
+    background: $ui-pane-border;
+}
+
+.control-point-snap-track::after {
+    position: absolute;
+    top: .1875rem;
+    left: .1875rem;
+    width: .75rem;
+    height: .75rem;
+    border-radius: 50%;
+    background: $input-background;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+    content: "";
+    transition: transform .15s ease;
+}
+
+.control-point-snap input:checked + .control-point-snap-track {
+    background: $looks-secondary;
+}
+
+.control-point-snap input:checked + .control-point-snap-track::after {
+    transform: translateX(.875rem);
+}
+
+.control-point-snap input:focus-visible + .control-point-snap-track {
+    box-shadow: 0 0 0 $grid-unit $looks-transparent;
+}
+
+.control-point-hint {
+    margin-left: calc(2 * $grid-unit);
+    overflow: hidden;
+    color: $text-primary;
+    font-size: .75rem;
+    opacity: .7;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+[dir="rtl"] .control-point-hint {
+    margin-right: calc(2 * $grid-unit);
+    margin-left: 0;
+}
+
+.control-point-header .control-point-action-button {
+    margin-left: auto;
+}
+
+[dir="rtl"] .control-point-header .control-point-action-button {
+    margin-right: auto;
+    margin-left: 0;
+}
+
+.control-point-group {
+    display: flex;
+    align-items: center;
+    gap: calc(3 * $grid-unit);
+    padding-right: calc(4 * $grid-unit);
+    margin-right: calc(6 * $grid-unit);
+    border-right: 1px dashed $ui-pane-border;
+}
+
+[dir="rtl"] .control-point-group {
+    padding-right: 0;
+    padding-left: calc(4 * $grid-unit);
+    margin-right: 0;
+    margin-left: calc(6 * $grid-unit);
+    border-right: 0;
+    border-left: 1px dashed $ui-pane-border;
+}
+
+.control-point-endpoint {
+    display: flex;
+    align-items: center;
+    gap: $grid-unit;
+    min-height: 2rem;
+    padding: 0 calc(1.5 * $grid-unit);
+    color: $text-primary;
+    background: $input-background;
+    border: 1px solid $form-border;
+    border-radius: .25rem;
+    font: inherit;
+    font-size: .75rem;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.control-point-endpoint[aria-pressed="true"] {
+    border-color: $looks-secondary;
+    box-shadow: 0 0 0 $grid-unit $looks-transparent;
+}
+
+.control-point-endpoint:focus-visible {
+    border-color: $looks-secondary;
+    outline: none;
+}
+
+.control-point-swatch {
+    box-sizing: border-box;
+    width: 1rem;
+    height: 1rem;
+    border: .1875rem solid $control-primary;
+    border-radius: 50%;
+    background: white;
+}
+
+.control-point-swatch-end {
+    border-color: #4c97ff;
+}
+
+.control-point-coordinate {
+    display: flex;
+    align-items: center;
+    gap: calc(.5 * $grid-unit);
+    color: $text-primary;
+    font-size: .75rem;
+    font-weight: bold;
+}
+
+.control-point-coordinate input {
+    box-sizing: border-box;
+    width: 5rem;
 }
 
 [dir="ltr"] .mod-dashed-border {
@@ -142,11 +389,19 @@ $border-radius: 0.25rem;
 .mode-selector {
     display: flex;
     max-width: 7.5rem;
+    padding: 0;
+    margin: 0;
+    border: 0;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
     align-content: flex-start;
     justify-content: space-between;
+}
+
+.mode-selector.mod-disabled {
+    opacity: .35;
+    pointer-events: none;
 }
 
 .zoom-controls {
