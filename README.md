@@ -1,11 +1,11 @@
-# TurboWarp/scratch-paint
+# Blockdia/scratch-paint
 
-Modified version of scratch-paint for TurboWarp
+Blockdia paint editor based on TurboWarp and Scratch 3.0, published as `@blockdia/scratch-paint`.
 
 ## Building
 
 ```bash
-git clone https://github.com/TurboWarp/scratch-paint.git
+git clone https://github.com/blockdia/scratch-paint.git
 npm ci
 npm start
 npm run build
@@ -14,6 +14,17 @@ npm run build
 Development playground runs on http://localhost:8078/playground/. Note that http://localhost:8078/ gives you the **built** playground, not the development playground.
 
 For more information, see https://docs.turbowarp.org/development/getting-started
+
+## Publishing
+
+The Blockdia package starts at version `0.1.0`, independently of upstream versions.
+After merging to `develop`, create a GitHub release whose tag exactly matches
+`v` followed by the version in `package.json`. The publish workflow validates
+the tag, runs lint and unit tests, and publishes the public scoped package.
+The `prepublishOnly` hook builds the package before publishing.
+
+Configure the repository's `npm` environment and npm publishing authentication
+before the first release. Creating a version commit alone does not publish a package.
 
 ## License
 

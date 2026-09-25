@@ -92,6 +92,22 @@ const getGuideLayer = function () {
     return layer;
 };
 
+const _makeControlPointGuideLayer = function () {
+    const controlPointGuideLayer = new paper.Layer();
+    controlPointGuideLayer.data.isControlPointGuideLayer = true;
+    return controlPointGuideLayer;
+};
+
+const getControlPointGuideLayer = function () {
+    let layer = _getLayer('isControlPointGuideLayer');
+    if (!layer) {
+        layer = _makeControlPointGuideLayer();
+        layer.bringToFront();
+        _getPaintingLayer().activate();
+    }
+    return layer;
+};
+
 const setGuideItem = function (item) {
     item.locked = true;
     item.guide = true;
@@ -112,9 +128,11 @@ const hideGuideLayers = function (includeRaster) {
     const dragCrosshairLayer = getDragCrosshairLayer();
     const outlineLayer = _getLayer('isOutlineLayer');
     const guideLayer = getGuideLayer();
+    const controlPointGuideLayer = getControlPointGuideLayer();
     dragCrosshairLayer.remove();
     outlineLayer.remove();
     guideLayer.remove();
+    controlPointGuideLayer.remove();
     backgroundGuideLayer.remove();
     let rasterLayer;
     if (includeRaster) {
@@ -125,6 +143,7 @@ const hideGuideLayers = function (includeRaster) {
         dragCrosshairLayer: dragCrosshairLayer,
         outlineLayer: outlineLayer,
         guideLayer: guideLayer,
+        controlPointGuideLayer: controlPointGuideLayer,
         backgroundGuideLayer: backgroundGuideLayer,
         rasterLayer: rasterLayer
     };
@@ -140,6 +159,7 @@ const showGuideLayers = function (guideLayers) {
     const dragCrosshairLayer = guideLayers.dragCrosshairLayer;
     const outlineLayer = guideLayers.outlineLayer;
     const guideLayer = guideLayers.guideLayer;
+    const controlPointGuideLayer = guideLayers.controlPointGuideLayer;
     const rasterLayer = guideLayers.rasterLayer;
     if (rasterLayer && !rasterLayer.index) {
         paper.project.addLayer(rasterLayer);
@@ -160,6 +180,10 @@ const showGuideLayers = function (guideLayers) {
     if (!guideLayer.index) {
         paper.project.addLayer(guideLayer);
         guideLayer.bringToFront();
+    }
+    if (controlPointGuideLayer && !controlPointGuideLayer.index) {
+        paper.project.addLayer(controlPointGuideLayer);
+        controlPointGuideLayer.bringToFront();
     }
     if (paper.project.activeLayer !== _getPaintingLayer()) {
         log.error(`Wrong active layer`);
@@ -369,10 +393,12 @@ const setupLayers = function (format) {
     const dragCrosshairLayer = _makeDragCrosshairLayer();
     const outlineLayer = _makeOutlineLayer();
     const guideLayer = _makeGuideLayer();
+    const controlPointGuideLayer = _makeControlPointGuideLayer();
     backgroundGuideLayer.sendToBack();
     dragCrosshairLayer.bringToFront();
     outlineLayer.bringToFront();
     guideLayer.bringToFront();
+    controlPointGuideLayer.bringToFront();
     paintLayer.activate();
 };
 
@@ -384,6 +410,7 @@ export {
     showGuideLayers,
     getDragCrosshairLayer,
     getGuideLayer,
+    getControlPointGuideLayer,
     getBackgroundGuideLayer,
     convertBackgroundGuideLayer,
     clearRaster,

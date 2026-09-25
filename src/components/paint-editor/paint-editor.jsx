@@ -21,6 +21,7 @@ import BrushMode from '../../containers/brush-mode.jsx';
 import EraserMode from '../../containers/eraser-mode.jsx';
 import FillColorIndicatorComponent from '../../containers/fill-color-indicator.jsx';
 import FillMode from '../../containers/fill-mode.jsx';
+import Input from '../forms/input.jsx';
 import InputGroup from '../input-group/input-group.jsx';
 import LineMode from '../../containers/line-mode.jsx';
 import Loupe from '../loupe/loupe.jsx';
@@ -42,6 +43,9 @@ import zoomInIcon from './icons/zoom-in.svg';
 import zoomOutIcon from './icons/zoom-out.svg';
 import zoomResetIcon from './icons/zoom-reset.svg';
 import themeIcon from './icons/theme.svg';
+import redoIcon from '!../../tw-recolor/build!../fixed-tools/icons/redo.svg';
+import undoIcon from '!../../tw-recolor/build!../fixed-tools/icons/undo.svg';
+import TWRenderRecoloredImage from '../../tw-recolor/render.jsx';
 
 const messages = defineMessages({
     bitmap: {
@@ -56,6 +60,176 @@ const messages = defineMessages({
     }
 });
 
+const ControlPointTools = ({editor}) => {
+    if (!editor) return null;
+    const {
+        onEdit: handleEdit,
+        onExit: handleExit,
+        onUndo: handleUndo,
+        onRedo: handleRedo,
+        onToggleSnap: handleToggleSnap,
+        onSelect: handleSelect,
+        onNudge: handleNudge,
+        onCoordinateCommit: handleCoordinateCommit,
+        onCoordinateChange: handleCoordinateChange,
+        onCoordinateKeyDown: handleCoordinateKeyDown
+    } = editor;
+    if (!editor.active) {
+        return (
+            <button
+                className={styles.controlPointActionButton}
+                type="button"
+                onClick={handleEdit}
+            >
+                {editor.labels.edit}
+            </button>
+        );
+    }
+    return (
+        <React.Fragment>
+            <div className={classNames(styles.row, styles.controlPointHeader)}>
+                <span className={styles.controlPointTitle}>{editor.labels.title}</span>
+                <InputGroup className={styles.controlPointHistory}>
+                    <ButtonGroup>
+                        <Button
+                            className={styles.buttonGroupButton}
+                            disabled={!editor.canUndo}
+                            title={editor.labels.undo}
+                            onClick={handleUndo}
+                        >
+                            <TWRenderRecoloredImage
+                                alt={editor.labels.undo}
+                                className={styles.buttonGroupButtonIcon}
+                                draggable={false}
+                                src={undoIcon}
+                            />
+                        </Button>
+                        <Button
+                            className={styles.buttonGroupButton}
+                            disabled={!editor.canRedo}
+                            title={editor.labels.redo}
+                            onClick={handleRedo}
+                        >
+                            <TWRenderRecoloredImage
+                                alt={editor.labels.redo}
+                                className={styles.buttonGroupButtonIcon}
+                                draggable={false}
+                                src={redoIcon}
+                            />
+                        </Button>
+                    </ButtonGroup>
+                </InputGroup>
+                <label className={styles.controlPointSnap}>
+                    <span>{editor.labels.snap}</span>
+                    <input
+                        checked={editor.snap}
+                        type="checkbox"
+                        onChange={handleToggleSnap}
+                    />
+                    <span
+                        aria-hidden="true"
+                        className={styles.controlPointSnapTrack}
+                    />
+                </label>
+                <span className={styles.controlPointHint}>{editor.labels.hint}</span>
+                <button
+                    className={styles.controlPointActionButton}
+                    type="button"
+                    onClick={handleExit}
+                >
+                    {editor.labels.exit}
+                </button>
+            </div>
+            <div className={classNames(styles.row, styles.controlPointSecondRow)}>
+                {['start', 'end'].map(name => (
+                    <InputGroup
+                        className={styles.controlPointGroup}
+                        key={name}
+                    >
+                        <button
+                            aria-pressed={editor.selected === name}
+                            className={styles.controlPointEndpoint}
+                            data-endpoint={name}
+                            type="button"
+                            onClick={handleSelect}
+                            onKeyDown={handleNudge}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={classNames(styles.controlPointSwatch, {
+                                    [styles.controlPointSwatchEnd]: name === 'end'
+                                })}
+                            />
+                            {editor.labels[name]}
+                        </button>
+                        {['x', 'y'].map((axis, index) => (
+                            <label
+                                className={styles.controlPointCoordinate}
+                                key={axis}
+                            >
+                                <span>{axis}</span>
+                                <Input
+                                    range
+                                    small
+                                    aria-label={`${editor.labels[name]} ${axis}`}
+                                    data-axis={axis}
+                                    data-endpoint={name}
+                                    step="1"
+                                    type="number"
+                                    value={(editor.coordinateValues || editor.points)[name][index]}
+                                    onBlur={handleCoordinateCommit}
+                                    onChange={handleCoordinateChange}
+                                    onFocus={handleSelect}
+                                    onKeyDown={handleCoordinateKeyDown}
+                                />
+                            </label>
+                        ))}
+                    </InputGroup>
+                ))}
+            </div>
+        </React.Fragment>
+    );
+};
+
+ControlPointTools.propTypes = {
+    editor: PropTypes.shape({
+        active: PropTypes.bool.isRequired,
+        canRedo: PropTypes.bool.isRequired,
+        canUndo: PropTypes.bool.isRequired,
+        labels: PropTypes.shape({
+            edit: PropTypes.string.isRequired,
+            end: PropTypes.string.isRequired,
+            exit: PropTypes.string.isRequired,
+            hint: PropTypes.string.isRequired,
+            redo: PropTypes.string.isRequired,
+            snap: PropTypes.string.isRequired,
+            start: PropTypes.string.isRequired,
+            title: PropTypes.string.isRequired,
+            undo: PropTypes.string.isRequired
+        }).isRequired,
+        onCoordinateChange: PropTypes.func.isRequired,
+        onCoordinateCommit: PropTypes.func.isRequired,
+        onCoordinateKeyDown: PropTypes.func.isRequired,
+        onEdit: PropTypes.func.isRequired,
+        onExit: PropTypes.func.isRequired,
+        onNudge: PropTypes.func.isRequired,
+        onRedo: PropTypes.func.isRequired,
+        onSelect: PropTypes.func.isRequired,
+        onToggleSnap: PropTypes.func.isRequired,
+        onUndo: PropTypes.func.isRequired,
+        coordinateValues: PropTypes.shape({
+            end: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired,
+            start: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired
+        }),
+        points: PropTypes.shape({
+            end: PropTypes.arrayOf(PropTypes.number).isRequired,
+            start: PropTypes.arrayOf(PropTypes.number).isRequired
+        }).isRequired,
+        selected: PropTypes.oneOf(['start', 'end']).isRequired,
+        snap: PropTypes.bool.isRequired
+    })
+};
+
 const PaintEditorComponent = props => (
     <div
         className={styles.editorContainer}
@@ -63,53 +237,46 @@ const PaintEditorComponent = props => (
         data-paint-theme={props.theme}
     >
         {props.canvas !== null ? ( // eslint-disable-line no-negated-condition
-            <div className={styles.editorContainerTop}>
-                {/* First row */}
-                <div className={styles.row}>
-                    <FixedToolsContainer
-                        canRedo={props.canRedo}
-                        canUndo={props.canUndo}
-                        name={props.name}
-                        onRedo={props.onRedo}
-                        onUndo={props.onUndo}
-                        onUpdateImage={props.onUpdateImage}
-                        onUpdateName={props.onUpdateName}
-                        width={props.width}
-                    />
-                </div>
-                {/* Second Row */}
-                {isVector(props.format) ?
-                    <div className={styles.row}>
-                        <InputGroup
-                            className={classNames(
-                                styles.row,
-                                styles.modDashedBorder,
-                                styles.modLabeledIconHeight
-                            )}
+            <div
+                className={styles.editorContainerTop}
+                data-control-point-editor={props.controlPointEditor && props.controlPointEditor.active ?
+                    'active' : 'inactive'}
+            >
+                {props.controlPointEditor && props.controlPointEditor.active &&
+                    <ControlPointTools editor={props.controlPointEditor} />}
+                <React.Fragment>
+                    {/* First row */}
+                    <div
+                        aria-hidden={Boolean(props.controlPointEditor && props.controlPointEditor.active)}
+                        className={classNames(styles.row, styles.nativeFirstRow)}
+                        inert={props.controlPointEditor && props.controlPointEditor.active ? '' : null}
+                    >
+                        <FixedToolsContainer
+                            canRedo={props.canRedo}
+                            canUndo={props.canUndo}
+                            name={props.name}
+                            onRedo={props.onRedo}
+                            onUndo={props.onUndo}
+                            onUpdateImage={props.onUpdateImage}
+                            onUpdateName={props.onUpdateName}
+                            width={props.width}
+                        />
+                        <div className={styles.controlPointEntry}>
+                            <ControlPointTools
+                                editor={props.controlPointEditor && {
+                                    ...props.controlPointEditor,
+                                    active: false
+                                }}
+                            />
+                        </div>
+                    </div>
+                    {/* Second Row */}
+                    {isVector(props.format) ?
+                        <div
+                            aria-hidden={Boolean(props.controlPointEditor && props.controlPointEditor.active)}
+                            className={classNames(styles.row, styles.nativeSecondRow)}
+                            inert={props.controlPointEditor && props.controlPointEditor.active ? '' : null}
                         >
-                            {/* fill */}
-                            <FillColorIndicatorComponent
-                                className={styles.modMarginAfter}
-                                onUpdateImage={props.onUpdateImage}
-                            />
-                            {/* stroke */}
-                            <StrokeColorIndicatorComponent
-                                onUpdateImage={props.onUpdateImage}
-                            />
-                            {/* stroke width */}
-                            <StrokeWidthIndicatorComponent
-                                onUpdateImage={props.onUpdateImage}
-                            />
-                        </InputGroup>
-                        <InputGroup className={styles.modModeTools}>
-                            <ModeToolsContainer
-                                onUpdateImage={props.onUpdateImage}
-                                onManageFonts={props.onManageFonts}
-                            />
-                        </InputGroup>
-                    </div> :
-                    isBitmap(props.format) ?
-                        <div className={styles.row}>
                             <InputGroup
                                 className={classNames(
                                     styles.row,
@@ -122,6 +289,14 @@ const PaintEditorComponent = props => (
                                     className={styles.modMarginAfter}
                                     onUpdateImage={props.onUpdateImage}
                                 />
+                                {/* stroke */}
+                                <StrokeColorIndicatorComponent
+                                    onUpdateImage={props.onUpdateImage}
+                                />
+                                {/* stroke width */}
+                                <StrokeWidthIndicatorComponent
+                                    onUpdateImage={props.onUpdateImage}
+                                />
                             </InputGroup>
                             <InputGroup className={styles.modModeTools}>
                                 <ModeToolsContainer
@@ -129,15 +304,48 @@ const PaintEditorComponent = props => (
                                     onManageFonts={props.onManageFonts}
                                 />
                             </InputGroup>
-                        </div> : null
-                }
+                        </div> :
+                        isBitmap(props.format) ?
+                            <div
+                                aria-hidden={Boolean(props.controlPointEditor && props.controlPointEditor.active)}
+                                className={classNames(styles.row, styles.nativeSecondRow)}
+                                inert={props.controlPointEditor && props.controlPointEditor.active ? '' : null}
+                            >
+                                <InputGroup
+                                    className={classNames(
+                                        styles.row,
+                                        styles.modDashedBorder,
+                                        styles.modLabeledIconHeight
+                                    )}
+                                >
+                                    {/* fill */}
+                                    <FillColorIndicatorComponent
+                                        className={styles.modMarginAfter}
+                                        onUpdateImage={props.onUpdateImage}
+                                    />
+                                </InputGroup>
+                                <InputGroup className={styles.modModeTools}>
+                                    <ModeToolsContainer
+                                        onUpdateImage={props.onUpdateImage}
+                                        onManageFonts={props.onManageFonts}
+                                    />
+                                </InputGroup>
+                            </div> : null
+                    }
+                </React.Fragment>
             </div>
         ) : null}
 
         <div className={styles.topAlignRow}>
             {/* Modes */}
             {props.canvas !== null && isVector(props.format) ? ( // eslint-disable-line no-negated-condition
-                <div className={styles.modeSelector}>
+                <fieldset
+                    aria-disabled={Boolean(props.controlPointGuide)}
+                    className={classNames(styles.modeSelector, {
+                        [styles.modDisabled]: props.controlPointGuide
+                    })}
+                    disabled={Boolean(props.controlPointGuide)}
+                >
                     <SelectMode
                         onUpdateImage={props.onUpdateImage}
                     />
@@ -166,11 +374,17 @@ const PaintEditorComponent = props => (
                     <RectMode
                         onUpdateImage={props.onUpdateImage}
                     />
-                </div>
+                </fieldset>
             ) : null}
 
             {props.canvas !== null && isBitmap(props.format) ? ( // eslint-disable-line no-negated-condition
-                <div className={styles.modeSelector}>
+                <fieldset
+                    aria-disabled={Boolean(props.controlPointGuide)}
+                    className={classNames(styles.modeSelector, {
+                        [styles.modDisabled]: props.controlPointGuide
+                    })}
+                    disabled={Boolean(props.controlPointGuide)}
+                >
                     <BitBrushMode
                         onUpdateImage={props.onUpdateImage}
                     />
@@ -197,7 +411,7 @@ const PaintEditorComponent = props => (
                     <BitSelectMode
                         onUpdateImage={props.onUpdateImage}
                     />
-                </div>
+                </fieldset>
             ) : null}
 
             <div className={styles.controlsContainer}>
@@ -209,6 +423,7 @@ const PaintEditorComponent = props => (
                 >
                     <PaperCanvas
                         canvasRef={props.setCanvas}
+                        controlPointGuide={props.controlPointGuide}
                         image={props.image}
                         imageFormat={props.imageFormat}
                         imageId={props.imageId}
@@ -328,6 +543,8 @@ PaintEditorComponent.propTypes = {
     canUndo: PropTypes.func.isRequired,
     canvas: PropTypes.instanceOf(Element),
     colorInfo: Loupe.propTypes.colorInfo,
+    controlPointEditor: ControlPointTools.propTypes.editor,
+    controlPointGuide: PropTypes.object, // eslint-disable-line react/forbid-prop-types
     format: PropTypes.oneOf(Object.keys(Formats)),
     image: PropTypes.oneOfType([
         PropTypes.string,
