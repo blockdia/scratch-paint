@@ -176,7 +176,7 @@ const ControlPointTools = ({editor}) => {
                                     data-endpoint={name}
                                     step="1"
                                     type="number"
-                                    value={editor.points[name][index]}
+                                    value={(editor.coordinateValues || editor.points)[name][index]}
                                     onBlur={handleCoordinateCommit}
                                     onChange={handleCoordinateChange}
                                     onFocus={handleSelect}
@@ -217,6 +217,10 @@ ControlPointTools.propTypes = {
         onSelect: PropTypes.func.isRequired,
         onToggleSnap: PropTypes.func.isRequired,
         onUndo: PropTypes.func.isRequired,
+        coordinateValues: PropTypes.shape({
+            end: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired,
+            start: PropTypes.arrayOf(PropTypes.oneOfType([PropTypes.number, PropTypes.string])).isRequired
+        }),
         points: PropTypes.shape({
             end: PropTypes.arrayOf(PropTypes.number).isRequired,
             start: PropTypes.arrayOf(PropTypes.number).isRequired

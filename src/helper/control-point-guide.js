@@ -48,8 +48,8 @@ const drawControlPointGuide = function (guide, theme) {
         const selected = guide.selected === name;
         const circle = new paper.Path.Circle(position, (selected ? 8 : 7) / zoom);
         circle.fillColor = '#ffffff';
-        circle.strokeColor = selected ? GUIDE_COLOR : POINT_COLOR;
-        circle.strokeWidth = 3 / zoom;
+        circle.strokeColor = name === 'start' ? GUIDE_COLOR : POINT_COLOR;
+        circle.strokeWidth = (selected ? 4 : 3) / zoom;
         circle.data.controlPointGuideEndpoint = name;
         setGuideItem(circle);
         circle.parent = layer;
