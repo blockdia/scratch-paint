@@ -17,3 +17,6 @@ playground/*
 
 # generated translation files
 /translations
+
+# Blockdia release archives
+/blockdia-scratch-paint-*.tgz

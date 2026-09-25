@@ -1,7 +1,7 @@
 {
-  "name": "scratch-paint",
-  "version": "2.1.61",
-  "description": "Graphical User Interface for the Scratch 3.0 paint editor, which is used to make and edit sprites for use in projects.",
+  "name": "@blockdia/scratch-paint",
+  "version": "0.1.0",
+  "description": "Blockdia paint editor based on TurboWarp and Scratch 3.0",
   "main": "./dist/scratch-paint.js",
   "browser": "./src/index.js",
   "scripts": {
@@ -13,14 +13,15 @@
     "start": "webpack-dev-server",
     "test": "npm run unit",
     "unit": "jest --reporters=default",
-    "watch": "webpack --progress --colors --watch"
+    "watch": "webpack --progress --colors --watch",
+    "prepublishOnly": "npm run build"
   },
   "author": "Massachusetts Institute of Technology",
   "license": "GPL-3.0",
-  "homepage": "https://github.com/LLK/scratch-paint#readme",
+  "homepage": "https://github.com/blockdia/scratch-paint#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LLK/scratch-paint.git"
+    "url": "https://github.com/blockdia/scratch-paint.git"
   },
   "dependencies": {
     "@turbowarp/nanolog": "^0.2.0",
@@ -67,6 +68,7 @@
     "gh-pages": "3.2.3",
     "html-webpack-plugin": "3.2.0",
     "jest": "^27.0.5",
+    "jest-canvas-mock": "2.5.2",
     "jest-junit": "13.0.0",
     "json": "9.0.6",
     "lodash.defaultsdeep": "4.6.1",
@@ -102,7 +104,9 @@
     "webpack-dev-server": "3.11.2"
   },
   "jest": {
+    "testEnvironment": "jsdom",
     "setupFiles": [
+      "jest-canvas-mock",
       "raf/polyfill",
       "<rootDir>/test/helpers/enzyme-setup.js"
     ],
@@ -119,5 +123,12 @@
     "last 3 versions",
     "Safari >= 8",
     "iOS >= 8"
-  ]
+  ],
+  "bugs": {
+    "url": "https://github.com/blockdia/scratch-paint/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }
