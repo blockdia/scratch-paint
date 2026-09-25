@@ -157,9 +157,10 @@ class PaperCanvas extends React.Component {
         };
         this.controlPointTool.onKeyDown = event => {
             const guide = this.currentControlPointGuide;
-            if (!guide) return;
+            if (!guide || event.event.target !== this.canvas) return;
             if (event.key === 'escape') {
                 this.controlPointDrag = null;
+                this.canvas.style.cursor = this.props.cursor;
                 if (guide.onCancel) guide.onCancel();
                 event.stop();
                 return;
